@@ -4,6 +4,7 @@ from functools import wraps
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix # <-- 新增导入
 
 # 导入 SQLAlchemy
 from sqlalchemy import create_engine, Column, Integer, String, DateTime
@@ -35,6 +36,7 @@ ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1, x_prefix=1) # <-- 新增应用 ProxyFix
 app.secret_key = SECRET_KEY
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
@@ -162,8 +164,8 @@ def play(video_id):
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
-    if 'logged_in' not in session:
-        return redirect(url_for('admin_login'))
+    if 'logged_in' in session:
+        return redirect(url_for('admin_dashboard'))
         
     if request.method == 'POST':
         password = request.form.get('password')
