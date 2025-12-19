@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录 - 视频中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #000000;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white flex items-center justify-center">
+    <div class="w-full max-w-md px-6">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-2">🎬 视频中心</h1>
+            <p class="text-gray-500">管理员登录</p>
+        </div>
+
+        <!-- 登录表单 -->
+        <div class="bg-gray-900 rounded-lg p-8">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="mb-4 p-3 bg-red-900/50 border border-red-700 rounded text-red-300 text-sm">
+                {% for message in messages %}
+                <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('admin_login') }}">
+                <div class="mb-6">
+                    <label for="password" class="block text-gray-400 text-sm mb-2">访问密码</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required
+                        autofocus
+                        class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition"
+                        placeholder="请输入管理密码">
+                </div>
+                <button 
+                    type="submit"
+                    class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition">
+                    登录
+                </button>
+            </form>
+        </div>
+
+        <!-- 返回链接 -->
+        <div class="text-center mt-6">
+            <a href="/" class="text-gray-500 hover:text-white text-sm">← 返回首页</a>
+        </div>
+    </div>
+</body>
+</html>

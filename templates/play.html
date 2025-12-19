@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ video.title or video.original_name }} - 视频中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #000000;
+        }
+        /* 视频播放器容器 - 确保全屏按钮可点击 */
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #000;
+            /* 确保视频容器在最上层 */
+            z-index: 100;
+        }
+        /* 视频元素样式 */
+        .video-player {
+            width: 100%;
+            max-height: 80vh;
+            display: block;
+            /* 关键：确保视频控件不被遮挡 */
+            position: relative;
+            z-index: 100;
+        }
+        /* 确保导航栏不会遮挡视频 */
+        nav {
+            z-index: 50;
+        }
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .video-player {
+                max-height: 60vh;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <!-- 导航栏 - 较低的 z-index -->
+    <nav class="bg-black/80 backdrop-blur-sm border-b border-gray-800 sticky top-0" style="z-index: 50;">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="text-gray-400 hover:text-white flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                返回首页
+            </a>
+            <h1 class="text-xl font-bold">🎬 视频中心</h1>
+            <div class="w-20"></div>
+        </div>
+    </nav>
+
+    <!-- 视频播放区域 -->
+    <main class="px-4 py-8">
+        <div class="video-container">
+            <!-- 
+                核心视频标签：
+                - controls: 必须有，显示播放控件和全屏按钮
+                - playsinline: 防止 iOS 自动全屏，但允许手动全屏
+                - webkit-playsinline: iOS 兼容性
+                - width="100%": 响应式宽度
+            -->
+            <video 
+                class="video-player"
+                src="{{ R2_PUBLIC_URL }}/{{ video.video_key }}"
+                controls
+                playsinline
+                webkit-playsinline
+                preload="auto"
+                autoplay>
+                您的浏览器不支持 HTML5 视频播放
+            </video>
+        </div>
+
+        <!-- 视频信息 -->
+        <div class="max-w-4xl mx-auto mt-6 px-4">
+            <h2 class="text-2xl font-bold mb-2">{{ video.title or video.original_name }}</h2>
+            <p class="text-gray-500">上传时间：{{ video.upload_time[:19] if video.upload_time else '未知' }}</p>
+        </div>
+
+        <!-- 全屏提示 -->
+        <div class="max-w-4xl mx-auto mt-4 px-4">
+            <p class="text-gray-600 text-sm">
+                💡 提示：点击视频右下角的全屏按钮可进入全屏模式观看
+            </p>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="border-t border-gray-800 mt-8">
+        <div class="max-w-7xl mx-auto px-4 py-6 text-center text-gray-600 text-sm">
+            <p>极简视频托管平台</p>
+        </div>
+    </footer>
+
+    <script>
+        // 确保视频控件可交互
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.querySelector('.video-player');
+            if (video) {
+                // 移除可能阻止点击的覆盖层
+                video.style.pointerEvents = 'auto';
+                
+                // 错误处理
+                video.addEventListener('error', function(e) {
+                    console.error('视频加载错误:', e);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

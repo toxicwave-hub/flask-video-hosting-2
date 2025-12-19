@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 视频中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #000000;
+        }
+        .upload-zone {
+            border: 2px dashed #374151;
+            transition: all 0.3s ease;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .thumbnail-preview {
+            max-width: 200px;
+            max-height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <!-- 导航栏 -->
+    <nav class="bg-gray-900 border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold">🎬 管理后台</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="/" class="text-gray-400 hover:text-white text-sm">查看前台</a>
+                <a href="{{ url_for('admin_logout') }}" class="text-red-400 hover:text-red-300 text-sm">退出登录</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- 消息提示 -->
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="mb-6 p-4 bg-green-900/50 border border-green-700 rounded-lg text-green-300">
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- 上传区域 -->
+        <div class="bg-gray-900 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-bold mb-4">上传视频</h2>
+            <form method="POST" action="{{ url_for('upload_video') }}" enctype="multipart/form-data" id="uploadForm">
+                <div class="mb-4">
+                    <label for="title" class="block text-gray-400 text-sm mb-2">视频标题（可选）</label>
+                    <input 
+                        type="text" 
+                        id="title" 
+                        name="title"
+                        class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition"
+                        placeholder="留空则使用文件名">
+                </div>
+                
+                <!-- 视频文件上传 -->
+                <div class="upload-zone rounded-lg p-8 text-center mb-4" id="dropZone">
+                    <input 
+                        type="file" 
+                        id="video" 
+                        name="video" 
+                        accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm"
+                        required
+                        class="hidden">
+                    <label for="video" class="cursor-pointer">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <p class="text-gray-400 mb-2">点击选择或拖拽视频文件到此处</p>
+                        <p class="text-gray-600 text-sm">支持格式：MP4, MOV, WebM（最大 500MB）</p>
+                    </label>
+                    <p id="fileName" class="text-blue-400 mt-4 hidden"></p>
+                </div>
+
+                <!-- 封面图片上传（可选） -->
+                <div class="mb-4">
+                    <label class="block text-gray-400 text-sm mb-2">视频封面（可选，不上传则不显示封面）</label>
+                    <div class="flex items-start gap-4">
+                        <div class="flex-1">
+                            <input 
+                                type="file" 
+                                id="thumbnail" 
+                                name="thumbnail" 
+                                accept=".jpg,.jpeg,.png,.gif,.webp,image/*"
+                                class="hidden">
+                            <label for="thumbnail" class="block w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-400 cursor-pointer hover:border-blue-500 transition text-center">
+                                <span id="thumbnailLabel">点击选择封面图片</span>
+                            </label>
+                            <p class="text-gray-600 text-xs mt-1">支持 JPG, PNG, GIF, WebP 格式</p>
+                        </div>
+                        <div id="thumbnailPreview" class="hidden">
+                            <img id="previewImg" class="thumbnail-preview" src="" alt="封面预览">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="uploadProgress" class="hidden mb-4">
+                    <div class="bg-gray-800 rounded-full h-2">
+                        <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="progressText" class="text-gray-400 text-sm mt-2 text-center">上传中...</p>
+                </div>
+                <button 
+                    type="submit"
+                    id="uploadBtn"
+                    class="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition">
+                    上传视频
+                </button>
+            </form>
+        </div>
+
+        <!-- 视频列表 -->
+        <div class="bg-gray-900 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">已上传视频 ({{ videos|length }})</h2>
+            {% if videos %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-gray-500 text-sm border-b border-gray-800">
+                            <th class="pb-3 pr-4">封面</th>
+                            <th class="pb-3 pr-4">标题</th>
+                            <th class="pb-3 pr-4">文件名</th>
+                            <th class="pb-3 pr-4">上传时间</th>
+                            <th class="pb-3">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for video in videos %}
+                        <tr class="border-b border-gray-800">
+                            <td class="py-4 pr-4">
+                                {% if video.thumbnail_key %}
+                                <img 
+                                    src="{{ R2_PUBLIC_URL }}/{{ video.thumbnail_key }}"
+                                    class="w-24 h-14 object-cover rounded bg-gray-800"
+                                    alt="封面">
+                                {% else %}
+                                <div class="w-24 h-14 flex items-center justify-center bg-gray-800 rounded text-gray-500 text-xs">
+                                    无封面
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 pr-4">
+                                <a href="{{ url_for('play_video', video_id=video.id) }}" class="text-blue-400 hover:text-blue-300">
+                                    {{ video.title or '无标题' }}
+                                </a>
+                            </td>
+                            <td class="py-4 pr-4 text-gray-400 text-sm">{{ video.original_name }}</td>
+                            <td class="py-4 pr-4 text-gray-500 text-sm">{{ video.upload_time[:19] if video.upload_time else '' }}</td>
+                            <td class="py-4">
+                                <form method="POST" action="{{ url_for('delete_video', video_id=video.id) }}" 
+                                      onsubmit="return confirm('确定要删除这个视频吗？')">
+                                    <button type="submit" class="text-red-400 hover:text-red-300 text-sm">删除</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">暂无视频，请上传第一个视频</p>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        // 视频文件选择显示
+        const fileInput = document.getElementById('video');
+        const fileName = document.getElementById('fileName');
+        const dropZone = document.getElementById('dropZone');
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileName.textContent = '已选择: ' + this.files[0].name;
+                fileName.classList.remove('hidden');
+            }
+        });
+
+        // 拖拽上传
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileName.textContent = '已选择: ' + files[0].name;
+                fileName.classList.remove('hidden');
+            }
+        });
+
+        // 封面图片预览
+        const thumbnailInput = document.getElementById('thumbnail');
+        const thumbnailLabel = document.getElementById('thumbnailLabel');
+        const thumbnailPreview = document.getElementById('thumbnailPreview');
+        const previewImg = document.getElementById('previewImg');
+
+        thumbnailInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                thumbnailLabel.textContent = file.name;
+                
+                // 显示预览
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    thumbnailPreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
